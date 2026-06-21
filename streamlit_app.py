@@ -35,15 +35,6 @@ Maintain this persona and these hidden tracking rules strictly throughout the se
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "chat_session" not in st.session_state:
-    # יצירת מודל ה-Gemini עם הנחיות המערכת
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        system_instruction=SYSTEM_INSTRUCTION
-    )
-    # התחלת שיחה חדשה ושמירתה בזיכרון של סטרימליט
-    st.session_state.chat_session = model.start_chat(history=[])
-
 # 5. עיצוב ממשק המשתמש (UI)
 st.title("🧘 סימולציית הרפיה ודמיון מודרך")
 st.write("ברוך הבא לסימולציה האדפטיבית. המערכת קשובה לקצב שלך ומלווה אותך צעד אחר צעד.")
@@ -72,10 +63,28 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
     with st.chat_message("assistant"):
         with st.spinner("קשוב אליך..."):
             try:
-                response = st.session_state.chat_session.send_message(user_input)
+                # בניית ההיסטוריה בפורמט מובנה התואם לגרסאות השרת
+                formatted_history = []
+                for msg in st.session_state.messages[:-1]:  # לוקחים את כל ההיסטוריה למעט הקלט הנוכחי
+                    role = "model" if msg["role"] == "assistant" else "user"
+                    formatted_history.append({"role": role, "parts": [msg["content"]]})
+                
+                # אתחול זמני של המודל לריצה הנוכחית למניעת בעיות זיכרון בשרת
+                model = genai.GenerativeModel(
+                    model_name="gemini-1.5-flash",
+                    system_instruction=SYSTEM_INSTRUCTION
+                )
+                
+                # ניהול השיחה ושליחת ההודעה
+                chat = model.start_chat(history=formatted_history)
+                response = chat.send_message(user_input)
+                
                 ai_response = response.text
                 st.markdown(ai_response)
                 # שמירת תגובת ה-AI בהיסטוריה
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                
             except Exception as e:
-                st.error("אירעה שגיאה בתקשורת עם השרת. אנא ודא שמפתח ה-API הוגדר כראוי ב-Secrets.")
+                st.error("אירעה שגיאה בתקשורת עם השרת.")
+                st.info(f"פרטי השגיאה הטכנית: {str(e)}")
+
