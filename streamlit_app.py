@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import google.generativeai as genai
 
 # הגדרת תצורת הדף - שים לב ל-st באותיות קטנות ומירכאות רגילות
