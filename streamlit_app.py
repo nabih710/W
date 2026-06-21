@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import google.generativeai as genai
 
 # 1. הגדרת תצורת הדף - חייב להיות פקודת הסטרימליט הראשונה בקוד
@@ -87,4 +87,3 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
             except Exception as e:
                 st.error("אירעה שגיאה בתקשורת עם השרת.")
                 st.info(f"פרטי השגיאה הטכנית: {str(e)}")
-
