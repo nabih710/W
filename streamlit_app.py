@@ -58,7 +58,8 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
 
             # קריאה למודל באמצעות מבנה מילוני ישיר (עוקף את באג ה-OAuth)
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='models/gemini-1.5-flash',
+
                 contents=contents,
                 config={'system_instruction': SYSTEM_INSTRUCTION}
             )
