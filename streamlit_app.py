@@ -15,6 +15,7 @@ if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
 else:
     st.error("מפתח ה-API חסר. אנא הגדר את GEMINI_API_KEY ב-Secrets של Streamlit.")
     st.stop()
+    
 # 3. הגדרת הנחיות המערכת (System Instruction)
 SYSTEM_INSTRUCTION = """
 You are an advanced, empathetic AI simulation designed by Nabia, specializing in positive psychology, mindfulness, and adaptive relaxation. Your goal is to guide the user through a customized imagery and relaxation session.
