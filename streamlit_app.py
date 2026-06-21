@@ -1,17 +1,19 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
-# 1. הגדרת תצורת הדף - חייב להיות פקודת הסטרימליט הראשונה בקוד
+# 1. הגדרת תצורת הדף
 st.set_page_config(page_title="סימולציית הרפיה אדפטיבית", layout="centered", initial_sidebar_state="collapsed")
 
-# 2. שליפת מפתח ה-API בצורה מאובטחת מתוך ה-Secrets
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# 2. שליפת מפתח ה-API ואתחול הלקוח החדש של גוגל
+if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
+    # יצירת ה-client הרשמי החדש של גוגל
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 else:
     st.error("מפתח ה-API חסר. אנא הגדר את GEMINI_API_KEY ב-Secrets של Streamlit.")
     st.stop()
 
-# 3. הגדרת הנחיות המערכת (System Instruction) עבור המודל
+# 3. הגדרת הנחיות המערכת (System Instruction)
 SYSTEM_INSTRUCTION = """
 You are an advanced, empathetic AI simulation designed by Nabia, specializing in positive psychology, mindfulness, and adaptive relaxation. Your goal is to guide the user through a customized imagery and relaxation session.
 
@@ -31,7 +33,7 @@ SIMULATION RULES:
 Maintain this persona and these hidden tracking rules strictly throughout the session. Credit for this simulation design belongs to Nabia.
 """
 
-# 4. אתחול משתני ה-Session State של סטרימליט (כדי שהשיחה לא תימחק בכל רענון)
+# 4. אתחול משתני ה-Session State
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -45,7 +47,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# הודעת פתיחה ראשונית מהסימולטור (אם השיחה רק התחילה)
+# הודעת פתיחה ראשונית
 if len(st.session_state.messages) == 0:
     welcome_text = "שלום. אני כאן כדי ללוות אותך ברגעים אלו של שקט והרפיה. כשרוצים להתחיל, פשוט ספר לי בקצרה איך אתה מרגיש עכשיו, או מה עובר עליך ביום הזה."
     st.session_state.messages.append({"role": "assistant", "content": welcome_text})
@@ -54,37 +56,34 @@ if len(st.session_state.messages) == 0:
 
 # 6. מנגנון קלט מהמשתמש ותגובת המודל
 if user_input := st.chat_input("כתוב כאן את תגובתך..."):
-    # הצגת הודעת המשתמש במסך ושמירתה
     with st.chat_message("user"):
         st.markdown(user_input)
     st.session_state.messages.append({"role": "user", "content": user_input})
     
-    # שליחת ההודעה ל-API של Gemini וקבלת תגובה אדפטיבית
     with st.chat_message("assistant"):
         with st.spinner("קשוב אליך..."):
             try:
-                # בניית ההיסטוריה בפורמט מובנה התואם לגרסאות השרת
-                formatted_history = []
-                for msg in st.session_state.messages[:-1]:  # לוקחים את כל ההיסטוריה למעט הקלט הנוכחי
+                # בניית היסטוריית השיחה בפורמט החדש של ה-SDK
+                contents = []
+                for msg in st.session_state.messages:
                     role = "model" if msg["role"] == "assistant" else "user"
-                    formatted_history.append({"role": role, "parts": [msg["content"]]})
+                    contents.append(
+                        types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])])
+                    )
                 
-                # אתחול זמני של המודל לריצה הנוכחית למניעת בעיות זיכרון בשרת
-                model = genai.GenerativeModel(
-                    model_name="models/gemini-1.5-flash",
-
-                    system_instruction=SYSTEM_INSTRUCTION
+                # קריאה למודל העדכני באמצעות ה-Client החדש
+                response = client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION
+                    )
                 )
-                
-                # ניהול השיחה ושליחת ההודעה
-                chat = model.start_chat(history=formatted_history)
-                response = chat.send_message(user_input)
                 
                 ai_response = response.text
                 st.markdown(ai_response)
-                # שמירת תגובת ה-AI בהיסטוריה
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
                 
             except Exception as e:
-                st.error("אירעה שגיאה בתקשורת עם השרת.")
+                st.error("אירעה שגיאה בתקשורת עם השרת החדש.")
                 st.info(f"פרטי השגיאה הטכנית: {str(e)}")
