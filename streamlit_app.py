@@ -71,7 +71,8 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
                 
                 # אתחול זמני של המודל לריצה הנוכחית למניעת בעיות זיכרון בשרת
                 model = genai.GenerativeModel(
-                    model_name="gemini-1.5-flash",
+                    model_name="models/gemini-1.5-flash",
+
                     system_instruction=SYSTEM_INSTRUCTION
                 )
                 
