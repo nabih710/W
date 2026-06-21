@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
 # 1. הגדרות בסיסיות של העמוד והצגת כותרת
 st.set_page_config(page_title="סימולציית הנחיה", page_icon="🤖", layout="centered")
@@ -12,14 +12,15 @@ Your goal is to guide the user through an adaptive guided imagery simulation bas
 Always respond in Hebrew. Maintain a calm, supportive, and professional tone.
 """
 
-# 2. שליפת מפתח ה-API ואתחול הלקוח
+# 2. שליפת מפתח ה-API ואתחול הלקוח החדש של גוגל
 if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    # אתחול נקי של ה-Client
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 else:
     st.error("מפתח ה-API חסר. אנא הגדר את GEMINI_API_KEY ב-Secrets של Streamlit.")
     st.stop()
 
-# 3. ניהול זיכרון השיחה והגדרת הודעת הפתיחה האסטרטגית
+# 3. ניהול זיכרון השיחה והגדרת הודעת הפתיחה האסטרטגית קבועה מראש
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {
@@ -28,7 +29,7 @@ if "messages" not in st.session_state:
         }
     ]
 
-# הצגת היסטוריית ההודעות (הודעת הפתיחה מופיעה מיד על המסך)
+# הצגת היסטוריית ההודעות (הודעת הפתיחה תופיע מיד)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -46,25 +47,27 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
         message_placeholder = st.empty()
         
         try:
-            # אתחול המודל עם הוראות המערכת בגרסה היציבה
-            model = genai.GenerativeModel(
-                model_name='gemini-1.5-flash',
-                system_instruction=SYSTEM_INSTRUCTION
-            )
-            
-            # בניית היסטוריית שיחה בפורמט הישן והבטוח
-            history = []
-            for msg in st.session_state.messages[:-1]:
+            # בניית מבנה ההיסטוריה בפורמט מילוני פשוט, התואם לשרת החדש
+            contents = []
+            for msg in st.session_state.messages:
                 role = "model" if msg["role"] == "assistant" else "user"
-                history.append({"role": role, "parts": [msg["content"]]})
-            
-            chat = model.start_chat(history=history)
-            response = chat.send_message(user_input)
+                contents.append({
+                    "role": role,
+                    "parts": [{"text": msg["content"]}]
+                })
+
+            # קריאה למודל באמצעות מבנה מילוני ישיר (עוקף את באג ה-OAuth)
+            response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=contents,
+                config={'system_instruction': SYSTEM_INSTRUCTION}
+            )
             
             ai_response = response.text
             message_placeholder.markdown(ai_response)
             st.session_state.messages.append({"role": "assistant", "content": ai_response})
             
         except Exception as e:
-            message_placeholder.error("אירעה שגיאה בתקשורת עם המודל.")
-            st.write(f"פרטי השגיאה: {e}")
+            message_placeholder.error("אירעה שגיאה במהלך הסימולציה. אנא ודא שמפתח ה-API תקין.")
+            st.write(f"פרטי השגיאה הטכנית: {e}")
+
