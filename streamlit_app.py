@@ -73,7 +73,7 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
                 
                 # קריאה למודל העדכני באמצעות ה-Client החדש
                 response = client.models.generate_content(
-                    model='gemini-1.5-flash',
+                    model='gemini-1.5-flash-latest',
                     contents=contents,
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION
