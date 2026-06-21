@@ -14,7 +14,6 @@ Always respond in Hebrew. Maintain a calm, supportive, and professional tone.
 
 # 2. שליפת מפתח ה-API ואתחול הלקוח החדש של גוגל
 if "GEMINI_API_KEY" in st.secrets and st.secrets["GEMINI_API_KEY"]:
-    # אתחול נקי של ה-Client
     client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 else:
     st.error("מפתח ה-API חסר. אנא הגדר את GEMINI_API_KEY ב-Secrets של Streamlit.")
@@ -47,7 +46,7 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
         message_placeholder = st.empty()
         
         try:
-            # בניית מבנה ההיסטוריה בפורמט מילוני פשוט, התואם לשרת החדש
+            # בניית מבנה ההיסטוריה בפורמט מילוני התואם לשרת החדש
             contents = []
             for msg in st.session_state.messages:
                 role = "model" if msg["role"] == "assistant" else "user"
@@ -56,10 +55,9 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
                     "parts": [{"text": msg["content"]}]
                 })
 
-            # קריאה למודל באמצעות מבנה מילוני ישיר (עוקף את באג ה-OAuth)
+            # קריאה למודל באמצעות הדגם המלא שעוקף את שגיאות ה-404
             response = client.models.generate_content(
-                model='models/gemini-1.5-flash',
-
+                model='gemini-1.5-flash-latest',
                 contents=contents,
                 config={'system_instruction': SYSTEM_INSTRUCTION}
             )
@@ -69,6 +67,5 @@ if user_input := st.chat_input("כתוב כאן את תגובתך..."):
             st.session_state.messages.append({"role": "assistant", "content": ai_response})
             
         except Exception as e:
-            message_placeholder.error("אירעה שגיאה במהלך הסימולציה. אנא ודא שמפתח ה-API תקין.")
+            message_placeholder.error("אירעה שגיאה במהלך הסימולציה. אנא ודא שמפתח ה-API ב-Secrets תקין.")
             st.write(f"פרטי השגיאה הטכנית: {e}")
-
