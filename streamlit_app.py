@@ -6,7 +6,7 @@ st.set_page_config(page_title="סימולציית הרפיה אדפטיבית", 
 
 # 2. שליפת מפתח ה-API בצורה מאובטחת מתוך ה-Secrets
 if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    genai.configure(API_KEY=st.secrets["GEMINI_API_KEY"])
 else:
     st.error("מפתח ה-API חסר. אנא הגדר את GEMINI_API_KEY ב-Secrets של Streamlit.")
     st.stop()
